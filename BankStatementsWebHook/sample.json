@@ -1,0 +1,23 @@
+﻿{
+  "ApplicationId": "10029",
+  "ApplicantId": "20015",
+  "LoginId": "Login10029|1",
+  "BankAccount": {
+    "Id": "26322397",
+    "ExternalAccountReference": null,
+    "ExternalSiteAccountReference": null,
+    "Bsb": "06 2692",
+    "AccountNumber": "2632 2397",
+    "AccountName": "NetBank Saver",
+    "OrganisationName": null,
+    "AccountHolder": "MYKHAYLO",
+    "AvailableBalance": 0.04,
+    "CurrentBalance": 0.04,
+    "LastUpdatedDate": null,
+    "AccountType": 0,
+    "MultipleAccountHolders": true,
+    "FinancialDataProvider": 2
+  },
+  "When": "2016-07-07T15:54:15.7745764+10:00",
+  "Correlation": [ "Login10029|1", "10029", "26322397" ]
+}
