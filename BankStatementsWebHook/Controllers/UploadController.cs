@@ -21,50 +21,57 @@ namespace BankStatementsWebHook.Controllers
         [SwaggerResponse(HttpStatusCode.Created)]
         [HttpPost, Route("File")]
         public async Task<HttpResponseMessage> UploadFile()
-        {
+        {            
+            // Check if the request contains multipart/form-data.
+            if (!Request.Content.IsMimeMultipartContent())
+            {
+                var content = await Request.Content.ReadAsStringAsync();
+
+                throw new HttpResponseException(HttpStatusCode.UnsupportedMediaType);
+            }
+
             var connection = CloudConfigurationManager.GetSetting("StorageConnectionString");
 
             var storageAccount = CloudStorageAccount.Parse(connection);
 
-            //    var file = HttpContext.Current.Request.Files.Count > 0 ? HttpContext.Current.Request.Files[0] : null;
+            HttpFileCollection files = HttpContext.Current.Request.Files;
 
-            //    if (file != null && file.ContentLength > 0)
-            //    {
-            //        var fileName = Path.GetFileName(file.FileName);
-
-            //        WriteFile(storageAccount, fileName, file.InputStream);
-            //    }
-
-            // Check if the request contains multipart/form-data.
-            if (!Request.Content.IsMimeMultipartContent())
+            foreach (var key in files.AllKeys)
             {
-                throw new HttpResponseException(HttpStatusCode.UnsupportedMediaType);
+                var file = files[key];
+
+                if (file != null && file.ContentLength > 0)
+                {
+                    var fileName = Path.GetFileName(file.FileName);
+
+                    WriteFile(storageAccount, fileName, file.InputStream);
+                }
             }
 
-            var root = HttpContext.Current.Server.MapPath("~/App_Data");
-            var provider = new MultipartFormDataStreamProvider(root);
+            //var root = HttpContext.Current.Server.MapPath("~/App_Data");
+            //var provider = new MultipartFormDataStreamProvider(root);
 
-            // Read the form data and return an async task.
-            return await Request.Content.ReadAsMultipartAsync(provider).
-                ContinueWith(t =>
-                {
-                    if (t.IsFaulted || t.IsCanceled)
-                    {
-                        Request.CreateErrorResponse(HttpStatusCode.InternalServerError, t.Exception);
-                    }
+            //// Read the form data and return an async task.
+            //return await Request.Content.ReadAsMultipartAsync(provider).
+            //    ContinueWith(t =>
+            //    {
+            //        if (t.IsFaulted || t.IsCanceled)
+            //        {
+            //            Request.CreateErrorResponse(HttpStatusCode.InternalServerError, t.Exception);
+            //        }
 
-                    // This illustrates how to get the file names.
-                    foreach (var file in provider.FileData)
-                    {
-                        var filename = file.Headers.ContentDisposition.FileName;
+            //        // This illustrates how to get the file names.
+            //        foreach (var file in provider.FileData)
+            //        {
+            //            var filename = file.Headers.ContentDisposition.FileName;
 
-                        Trace.WriteLine(filename);
-                        Trace.WriteLine("Server file path: " + file.LocalFileName);
+            //            Trace.WriteLine(filename);
+            //            Trace.WriteLine("Server file path: " + file.LocalFileName);
 
-                        //WriteFile(storageAccount, filename, file.InputStream);
-                    }
-                    return Request.CreateResponse(HttpStatusCode.OK);
-                });
+            //            //WriteFile(storageAccount, filename, file.InputStream);
+            //        }
+            return Request.CreateResponse(HttpStatusCode.OK);
+            //    });
         }
 
         private void WriteFile(CloudStorageAccount storageAccount, string filename, Stream inputStream)

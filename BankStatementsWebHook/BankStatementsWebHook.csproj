@@ -144,6 +144,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Properties\PublishProfiles\BankStatementsWebHook - Web Deploy %282%29.pubxml" />
     <None Include="Properties\PublishProfiles\BankStatementsWebHook - Web Deploy.pubxml" />
     <Content Include="sample.json" />
     <None Include="Web.Debug.config">
