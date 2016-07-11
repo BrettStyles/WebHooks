@@ -1,6 +1,4 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
+﻿using System.IO;
 using System.Net;
 using System.Net.Http;
 using System.Web;
@@ -9,24 +7,21 @@ using Microsoft.Azure;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.File;
 using Swashbuckle.Swagger.Annotations;
-using System.Threading.Tasks;
 
 namespace BankStatementsWebHook.Controllers
 {
-    [RoutePrefix("Upload")]
+    [RoutePrefix("BankStatementsWebHook")]
     public class UploadController : ApiController
     {
         // POST api/values
         [SwaggerOperation("Create")]
         [SwaggerResponse(HttpStatusCode.Created)]
-        [HttpPost, Route("File")]
-        public async Task<HttpResponseMessage> UploadFile()
+        [HttpPost, Route("Statements/{applicationId}")]
+        public HttpResponseMessage UploadFile([FromUri]string applicationId)
         {            
             // Check if the request contains multipart/form-data.
             if (!Request.Content.IsMimeMultipartContent())
             {
-                var content = await Request.Content.ReadAsStringAsync();
-
                 throw new HttpResponseException(HttpStatusCode.UnsupportedMediaType);
             }
 
@@ -44,37 +39,14 @@ namespace BankStatementsWebHook.Controllers
                 {
                     var fileName = Path.GetFileName(file.FileName);
 
-                    WriteFile(storageAccount, fileName, file.InputStream);
+                    WriteFile(storageAccount, applicationId, fileName, file.InputStream);
                 }
             }
 
-            //var root = HttpContext.Current.Server.MapPath("~/App_Data");
-            //var provider = new MultipartFormDataStreamProvider(root);
-
-            //// Read the form data and return an async task.
-            //return await Request.Content.ReadAsMultipartAsync(provider).
-            //    ContinueWith(t =>
-            //    {
-            //        if (t.IsFaulted || t.IsCanceled)
-            //        {
-            //            Request.CreateErrorResponse(HttpStatusCode.InternalServerError, t.Exception);
-            //        }
-
-            //        // This illustrates how to get the file names.
-            //        foreach (var file in provider.FileData)
-            //        {
-            //            var filename = file.Headers.ContentDisposition.FileName;
-
-            //            Trace.WriteLine(filename);
-            //            Trace.WriteLine("Server file path: " + file.LocalFileName);
-
-            //            //WriteFile(storageAccount, filename, file.InputStream);
-            //        }
             return Request.CreateResponse(HttpStatusCode.OK);
-            //    });
         }
 
-        private void WriteFile(CloudStorageAccount storageAccount, string filename, Stream inputStream)
+        private void WriteFile(CloudStorageAccount storageAccount, string applicationId , string filename, Stream inputStream)
         {
             // Create a CloudFileClient object for credentialed access to File storage.
             CloudFileClient fileClient = storageAccount.CreateCloudFileClient();
@@ -88,7 +60,11 @@ namespace BankStatementsWebHook.Controllers
                 // Get a reference to the root directory for the share.
                 CloudFileDirectory rootDir = share.GetRootDirectoryReference();
 
-                var fileRef = rootDir.GetFileReference(filename);
+                var applicationDir = rootDir.GetDirectoryReference(applicationId);
+
+                applicationDir.CreateIfNotExists();
+
+                var fileRef = applicationDir.GetFileReference(filename);
 
                 fileRef.UploadFromStream(inputStream);
             }
