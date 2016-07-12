@@ -1,11 +1,15 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Web;
 using System.Web.Http;
 using Microsoft.Azure;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.File;
+using Newtonsoft.Json.Linq;
 using Swashbuckle.Swagger.Annotations;
 
 namespace BankStatementsWebHook.Controllers
@@ -29,6 +33,14 @@ namespace BankStatementsWebHook.Controllers
 
             var storageAccount = CloudStorageAccount.Parse(connection);
 
+            var formKeys = HttpContext.Current.Request.Form.AllKeys;
+            if (formKeys.Contains("data"))
+            {
+                var data = HttpContext.Current.Request.Form["data"];
+
+                WriteFile(storageAccount, applicationId, "accounts.json", data);
+            }
+
             HttpFileCollection files = HttpContext.Current.Request.Files;
 
             foreach (var key in files.AllKeys)
@@ -46,9 +58,19 @@ namespace BankStatementsWebHook.Controllers
             return Request.CreateResponse(HttpStatusCode.OK);
         }
 
-        private void WriteFile(CloudStorageAccount storageAccount, string applicationId , string filename, Stream inputStream)
+        private void WriteFile(CloudStorageAccount storageAccount, string applicationId, string filename, string content)
         {
-            // Create a CloudFileClient object for credentialed access to File storage.
+            GetFileReference(storageAccount, applicationId, filename, fileRef => fileRef.UploadText(content));
+        }
+
+        private void WriteFile(CloudStorageAccount storageAccount, string applicationId, string filename, Stream inputStream)
+        {
+            GetFileReference(storageAccount,applicationId,filename, fileRef => fileRef.UploadFromStream(inputStream));
+        }
+
+        private void GetFileReference(CloudStorageAccount storageAccount, string applicationId, string filename, Action<CloudFile> callback) { 
+
+        // Create a CloudFileClient object for credentialed access to File storage.
             CloudFileClient fileClient = storageAccount.CreateCloudFileClient();
 
             // Get a reference to the file share we created previously.
@@ -64,9 +86,7 @@ namespace BankStatementsWebHook.Controllers
 
                 applicationDir.CreateIfNotExists();
 
-                var fileRef = applicationDir.GetFileReference(filename);
-
-                fileRef.UploadFromStream(inputStream);
+                callback(applicationDir.GetFileReference(filename));
             }
         }
     }
